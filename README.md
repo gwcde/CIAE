@@ -35,7 +35,7 @@ conda install --yes --file requirements.txt
 
 ```
 #EW-T2D-species
-python main.py -d EW-T2D -f species -uc --gpu 0 -m CatBoost -lr 0.01 -dp 6 -cb 0.9
+python main.py -d EW-T2D -f species -uc --gpu 0 -m CatBoost
 python main.py -d EW-T2D -f species -uc --gpu 0 -m FT-Transformer -lr 0.0001 -bs 8 -nb 2
 ```
 
