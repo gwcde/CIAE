@@ -1,0 +1,3 @@
+/hde/crc/401-500/ /hde/crc/401-500-fq /hde/crc/QC-crc/401-500 /hde/crc/QC-bwa-crc/401-500 /hdd/metagenome/crc_QC_BWA_reasult/401-500.out
+/hde/crc/501-600/ /hde/crc/501-600-fq /hde/crc/QC-crc/501-600 /hde/crc/QC-bwa-crc/501-600 /hdd/metagenome/crc_QC_BWA_reasult/501-600.out
+/hde/crc/601-696/ /hde/crc/601-696-fq /hde/crc/QC-crc/601-696 /hde/crc/QC-bwa-crc/601-696 /hdd/metagenome/crc_QC_BWA_reasult/601-696.out
