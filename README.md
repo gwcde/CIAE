@@ -25,7 +25,11 @@ bash generate_KO_relative_abundance.sh  #generate KO relative abundance
 conda create -n CIAE python=3.8
 conda activate CIAE
 conda install --yes --file requirements.txt
+```
+
+##### train
 
 ```
 
+```
 
