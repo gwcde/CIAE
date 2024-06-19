@@ -1,5 +1,9 @@
 # CIAE
-This is code for CIAE
+### Quick Start
+
+```
+git clone https://github.com/gwcde/CIAE.git
+```
 
 ### Acquire Original Metagenome Data
 

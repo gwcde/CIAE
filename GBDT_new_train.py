@@ -28,20 +28,7 @@ def setup_seed(seed):
     torch.backends.cudnn.enabled = False  # 禁用cudnn使用非确定性算法
     torch.use_deterministic_algorithms(True)
 
-def merge_ko(all_lists:list):
-    merge_list = []
-    if(len(all_lists)==0):return merge_list
-    for i in all_lists[0]:
-        flag = 1
-        for j,v in enumerate(all_lists):
-            if(j==0):continue
-            if(i not in v):
-                flag = 0
-                break
-        if(flag):merge_list.append(i)
-    return merge_list
-
-def acqure_ori_feature(in_file,inpret_file,colum,ratio):
+def acqure_ori_feature(in_file):
     pd_tmp = pd.read_csv(in_file)
     cols = list(pd_tmp)
     y = pd_tmp['label']
@@ -49,25 +36,6 @@ def acqure_ori_feature(in_file,inpret_file,colum,ratio):
         if i in cols:
             cols.remove(i)
     X = pd_tmp.loc[:, cols]
-    pd_test = pd.read_csv(inpret_file)
-    if(ratio<1):
-        nums = int(ratio * len(pd_test))
-    else:nums = ratio
-    #("nums::::",nums)
-    fi_col = []
-    if(colum in list(pd_test)):
-        for v in pd_test[colum][:nums]:
-            if(v in cols):fi_col.append(v)
-    else:
-        list_tmp = []
-        for tmp_colum in list(pd.read_csv(inpret_file)):
-            if('cat' in colum and 'cat' in tmp_colum):
-                list_tmp.append(list(pd_test[tmp_colum])[:nums])
-        ML_KO = merge_ko(list_tmp)
-        #print(len(ML_KO))
-        for v in ML_KO:
-            if (v in cols): fi_col.append(v)
-    X = X.loc[:, fi_col]
     return X,y
 
 def acquire_feature(file):
@@ -109,19 +77,18 @@ def evaluate(net: BaseEstimator, X: np.ndarray, y: np.ndarray,save_results_file)
         y_prob = net.predict_proba(X)
         # Performance Metrics: AUC, ACC, Recall, Precision, F1_score
         #print(y_prob)
-        # if(save_results_file!='NO'):
-        #     if(os.path.exists(save_results_file)):
-        #         print('file already exits!!!!!!!!!!!!!!!')
-        #         pd_tmp = pd.read_csv(save_results_file)
-        #         pd_tmp.loc[len(pd_tmp)] = ['cat_pred','cat_true']
-        #         for x,y in zip(list(y_prob[:,1]),list(y_true)):
-        #             pd_tmp.loc[len(pd_tmp)] = [x,y]
-        #     else:
-        #         print('file donot exits!!!!!!!!!!!!!!!')
-        #         pd_tmp = pd.DataFrame(columns=['cat_pred','cat_true'])
-        #         pd_tmp['cat_pred'] = list(y_prob[:,1])
-        #         pd_tmp['cat_true'] = list(y_true)
-        #     pd_tmp.to_csv(save_results_file, index=False)
+        if(save_results_file!='NO'):
+            if(os.path.exists(save_results_file)):
+                print('file already exits!!!!!!!!!!!!!!!')
+                pd_tmp = pd.read_csv(save_results_file)
+                pd_tmp.loc[len(pd_tmp)] = ['cat_pred','cat_true']
+                for x,y in zip(list(y_prob[:,1]),list(y_true)):
+                    pd_tmp.loc[len(pd_tmp)] = [x,y]
+            else:
+                pd_tmp = pd.DataFrame(columns=['cat_pred','cat_true'])
+                pd_tmp['cat_pred'] = list(y_prob[:,1])
+                pd_tmp['cat_true'] = list(y_true)
+            pd_tmp.to_csv(save_results_file, index=False)
 
         metrics = {
             'AUC': round(roc_auc_score(y_true, y_prob[:, 1]), 4),
@@ -140,6 +107,7 @@ def evaluate(net: BaseEstimator, X: np.ndarray, y: np.ndarray,save_results_file)
             'Precision': -1.0,
             'F1': -1.0
         }
+
 
 def XG_train(disease, feature, seed, use_config,use_best_losses,index_se,ko_nums,GBDT_type,file_f,in_file: str, out_file: str, **kwargs):
     # Set random seed
@@ -216,16 +184,16 @@ def XG_train(disease, feature, seed, use_config,use_best_losses,index_se,ko_nums
     res_df.to_csv(logpath, index=False)
 
 
-def Cat_train(disease, feature, seed, use_config,GBDT_type,in_file: str, out_file: str,inpret_file: str,save_results_file:str,colum,ratio, **kwargs):
+def Cat_train(disease, feature, seed, use_config,GBDT_type,in_file: str, out_file: str,save_results_file, **kwargs):
     # Set random seed
     setup_seed(seed)
     print('begin_Cat_train:!')
     # Load feature
-    if disease in ['EW-T2D', 'LC', 'C-T2D', 'IBD', 'Obesity']:
-        X, y = acqure_ori_feature(in_file=in_file,inpret_file=inpret_file,colum=colum,ratio=ratio)
+    if disease in ['EW-T2D', 'C-T2D']:
+        X, y = acqure_ori_feature(in_file=in_file)
         scaler = StandardScaler()
         X = scaler.fit_transform(X)
-        #print(X.shape)
+        print(X.shape)
         # 划分数据
         x_train, x_test, y_train, y_test = train_test_split(X, y,
                                                             test_size=0.2,
@@ -249,8 +217,6 @@ def Cat_train(disease, feature, seed, use_config,GBDT_type,in_file: str, out_fil
     record = OrderedDict(modelconfig)
     record['seed'] = seed
     record['feature'] = feature
-    record['ratio'] = ratio
-    record['inpret'] = colum
     # record['feature'] = 'kg'
 
     logpath = out_file
@@ -262,7 +228,7 @@ def Cat_train(disease, feature, seed, use_config,GBDT_type,in_file: str, out_fil
         # net = CatBoostClassifier(learning_rate=modelconfig['learning_rate'],iterations=50,depth=modelconfig['depth'],
         #                          subsample=modelconfig['subsample'],colsample_bylevel=modelconfig['colsample_bylevel'],
         #                          loss_function='Logloss',eval_metric='AUC',task_type='GPU',random_seed=seed)
-        net = CatBoostClassifier(learning_rate=modelconfig['learning_rate'],iterations=100,depth=modelconfig['depth'],
+        net = CatBoostClassifier(learning_rate=modelconfig['learning_rate'],iterations=150,depth=modelconfig['depth'],
                                  colsample_bylevel=modelconfig['colsample_bylevel'],
                                  eval_metric='AUC',loss_function='Logloss',random_seed=seed)
     else:
