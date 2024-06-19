@@ -21,7 +21,7 @@ if __name__ == '__main__':
     # batch size
     parser.add_argument('-bs', '--batch_size', type=int, default=4, help='batch size')
     # learning rate
-    parser.add_argument('-lr', '--learning_rate', type=float, default=1e-4, help='learning rate')
+    parser.add_argument('-lr', '--learning_rate', type=float, default=0.01, help='learning rate')
     # n_blocks
     parser.add_argument('-nb', '--n_blocks', type=int, default=2, help='number of blocks')
 
@@ -29,7 +29,7 @@ if __name__ == '__main__':
     #depth
     parser.add_argument('-dp', '--depth', type=int, default=6, help='depth')
     #colsample_bylevel
-    parser.add_argument('-cb', '--colsample_bylevel', type=float, default=1, help='colsample_bylevel')
+    parser.add_argument('-cb', '--colsample_bylevel', type=float, default=0.9, help='colsample_bylevel')
 
     #data
     parser.add_argument('-in', '--in_file', type=str, default='./data/EW_species_abundance.csv', help='in_file')
