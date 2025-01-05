@@ -35,8 +35,8 @@ conda install --yes --file requirements.txt
 
 ```
 #EW-T2D-species
-python main.py -d EW-T2D -f species -uc --gpu 0 -m CatBoost
-python main.py -d EW-T2D -f species -uc --gpu 0 -m FT-Transformer -lr 0.0001 -bs 8 -nb 2
+python main.py -d EW-T2D -f species -in ./data/EW_species_abundance.csv --gpu 0 -m CatBoost -ot ./result/species/EW_T2D_KO_Cat.csv
+python main.py -d EW-T2D -f species -in ./data/EW_species_abundance.csv --gpu 0 -m FT -lr 0.0001 -bs 8 -nb 2 -ot ./result/species/EW_T2D_KO_FT.csv
 ```
 
 ##### generate explanation

@@ -17,6 +17,7 @@ import random
 import os
 import ft_transformer as rtdl
 from sklearn.preprocessing import StandardScaler
+import ast
 def setup_seed(seed):
     np.random.seed(seed)
     random.seed(seed)
@@ -64,24 +65,72 @@ def acqure_ori_feature(in_file):
     X = pd_tmp.loc[:, cols]
 
     return X,y
-def evaluate(net: BaseEstimator, X: np.ndarray, y: np.ndarray,save_results_file):
+
+def merge_ko(all_lists:list):
+    merge_list = []
+    if(len(all_lists)==0):return merge_list
+    for i in all_lists[0]:
+        flag = 1
+        for j,v in enumerate(all_lists):
+            if(j==0):continue
+            if(i not in v):
+                flag = 0
+                break
+        if(flag):merge_list.append(i)
+    return merge_list
+
+
+def acqure_ori_feature_ex(in_file,inpret_file,colum,ratio):
+    pd_tmp = pd.read_csv(in_file)
+    cols = list(pd_tmp)
+    y = pd_tmp['label']
+    for i in ['sample_id', 'label', 'Unnamed: 0']:
+        if i in cols:
+            cols.remove(i)
+    X = pd_tmp.loc[:, cols]
+    pd_test = pd.read_csv(inpret_file)
+    if(ratio<1):
+        nums = int(ratio * len(pd_test))
+    else:nums = ratio
+    #("nums::::",nums)
+    fi_col = []
+    if(colum in list(pd_test)):
+        for v in list(pd_test[colum])[:nums]:
+            if(list(ast.literal_eval(v).keys())[0] in cols):
+                fi_col.append(list(ast.literal_eval(v).keys())[0])
+    else:
+        list_tmp = []
+        for tmp_colum in list(pd.read_csv(inpret_file)):
+            if('cat' in colum and 'cat' in tmp_colum):
+                list_tmp.append(list(pd_test[tmp_colum])[:nums])
+        ML_KO = merge_ko(list_tmp)
+        #print(len(ML_KO))
+        for v in ML_KO:
+            if (v in cols): fi_col.append(v)
+    X = X.loc[:, fi_col]
+    # # print(fi_col)
+    # print(X.shape,y.shape)
+    return X,y
+
+
+def evaluate(net: BaseEstimator, X: np.ndarray, y: np.ndarray):
     try:
         y_true, y_pred = y, net.predict(X)
         y_prob = net.predict_proba(X)
         # Performance Metrics: AUC, ACC, Recall, Precision, F1_score
         #print(y_prob)
-        if(save_results_file!='NO'):
-            if(os.path.exists(save_results_file)):
-                print('file already exits!!!!!!!!!!!!!!!')
-                pd_tmp = pd.read_csv(save_results_file)
-                pd_tmp.loc[len(pd_tmp)] = ['ft_pred','ft_true']
-                for x,y in zip(list(y_prob[:,1,0]),list(y_true)):
-                    pd_tmp.loc[len(pd_tmp)] = [x,y]
-            else:
-                pd_tmp = pd.DataFrame(columns=['ft_pred','ft_true'])
-                pd_tmp['ft_pred'] = list(y_prob[:,1,0])
-                pd_tmp['ft_true'] = list(y_true)
-            pd_tmp.to_csv(save_results_file, index=False)
+        # if(save_results_file!='NO'):
+        #     if(os.path.exists(save_results_file)):
+        #         print('file already exits!!!!!!!!!!!!!!!')
+        #         pd_tmp = pd.read_csv(save_results_file)
+        #         pd_tmp.loc[len(pd_tmp)] = ['ft_pred','ft_true']
+        #         for x,y in zip(list(y_prob[:,1,0]),list(y_true)):
+        #             pd_tmp.loc[len(pd_tmp)] = [x,y]
+        #     else:
+        #         pd_tmp = pd.DataFrame(columns=['ft_pred','ft_true'])
+        #         pd_tmp['ft_pred'] = list(y_prob[:,1,0])
+        #         pd_tmp['ft_true'] = list(y_true)
+        #     pd_tmp.to_csv(save_results_file, index=False)
 
         metrics = {
             'AUC': round(roc_auc_score(y_true, y_prob[:, 1]), 4),
@@ -125,7 +174,7 @@ def save_best_dev_model(net, output_dir: str,out_file:str):
 
 class ClassificationAccuracy_EW(Callback):
     def __init__(self):
-        self.output_dir = f"/hde/save_models"
+        self.output_dir = f"./ckpt/ckpt_EW-T2D/"
         self.out_file = f"ckpt_EW-T2D"
     def initialize(self):
         self.critical_epoch_ = -1
@@ -137,7 +186,7 @@ class ClassificationAccuracy_EW(Callback):
 
 class ClassificationAccuracy_C(Callback):
     def __init__(self):
-        self.output_dir = f"/hde/save_models"
+        self.output_dir = f"./ckpt/ckpt_C-T2D/"
         self.out_file = f"ckpt_C-T2D"
     def initialize(self):
         self.critical_epoch_ = -1
@@ -147,7 +196,7 @@ class ClassificationAccuracy_C(Callback):
         if net.history[-1, 'valid_loss_best']:
             save_best_dev_model(net, self.output_dir,self.out_file)
 
-def FT_train(disease, feature, seed, use_config,use_best_losses,in_file: str, out_file: str,save_results_file: str, **kwargs):
+def FT_train(disease, feature, seed,use_best_losses,in_file: str, out_file: str, **kwargs):
     # Set random seed
     setup_seed(seed)
     print('begin_FT_train:!')
@@ -189,13 +238,13 @@ def FT_train(disease, feature, seed, use_config,use_best_losses,in_file: str, ou
         # y_train = np.expand_dims(y_train, axis=1).astype(np.float32)
 
 
-    if use_config:
-        config_path = f"/hdd/wmh/Disease/Config/{disease}.yaml"
-        with open(config_path) as f:
-            config = yaml.load(f, Loader=yaml.FullLoader)
-            modelconfig = config['FT'][feature][seed]
-    else:
-        modelconfig = kwargs
+    # if use_config:
+    #     config_path = f"/hdd/wmh/Disease/Config/{disease}.yaml"
+    #     with open(config_path) as f:
+    #         config = yaml.load(f, Loader=yaml.FullLoader)
+    #         modelconfig = config['FT'][feature][seed]
+    # else:
+    modelconfig = kwargs
 
     # other config
     modelconfig['lr'] = float(modelconfig['lr'])
@@ -228,7 +277,9 @@ def FT_train(disease, feature, seed, use_config,use_best_losses,in_file: str, ou
         criterion = torch.nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([0.5]))
     else:
         criterion = torch.nn.BCEWithLogitsLoss
-    logpath = out_file
+        
+    logpath = out_file.split('.csv')[0] + '_ex.csv'
+
     # check record
     if not check_record(record, logpath):
         print("paras has trained.")
@@ -276,7 +327,7 @@ def FT_train(disease, feature, seed, use_config,use_best_losses,in_file: str, ou
             net.load_params(f_params="./ckpt/ckpt_EW-T2D/model_best.pkl",
                             f_optimizer="./ckpt/ckpt_EW-T2D/optim_best.pkl",
                             f_history="./ckpt/ckpt_EW-T2D/history_best.json")
-    scores = evaluate(net, x_test, y_test,save_results_file)
+    scores = evaluate(net, x_test, y_test)
     record.update(scores)
 
     try:
@@ -288,5 +339,244 @@ def FT_train(disease, feature, seed, use_config,use_best_losses,in_file: str, ou
     res_df.to_csv(logpath, index=False)
 
 
+def FT_train_ex(disease, feature, seed,use_best_losses,in_file: str, out_file: str,inpret_file,colum,ratio, **kwargs):
+    # Set random seed
+    setup_seed(seed)
+    print('begin_FT_train:!')
+    # Load feature
+    if disease in ['EW-T2D', 'LC', 'C-T2D', 'IBD', 'Obesity','new-C-T2D']:
+        X, y = acqure_ori_feature_ex(in_file=in_file,inpret_file=inpret_file,colum=colum,ratio=ratio)
+        scaler = StandardScaler()
+        X = scaler.fit_transform(X)
+        #print(X.shape)
+        # 划分数据
+        x_train, x_test, y_train, y_test = train_test_split(X, y,
+                                                            test_size=0.2,
+                                                            random_state=seed,
+                                                            stratify=y)
+        x_train = x_train.astype(np.float32)
+        x_test = x_test.astype(np.float32)
+        y_train = np.expand_dims(y_train, axis=1).astype(np.float32)
 
 
+    else:
+        exit()
+    modelconfig = kwargs
+
+    # other config
+    modelconfig['lr'] = float(modelconfig['lr'])
+    record = OrderedDict(modelconfig)
+    record['seed'] = seed
+    record['feature'] = feature
+    record['ratio'] = ratio
+    record['inpret'] = colum
+    # record['feature'] = 'kg'
+
+    modelconfig['n_num_features'] = x_train.shape[1]
+    modelconfig['last_layer_query_idx'] = [-1]
+    modelconfig['d_out'] = 1
+    modelconfig['cat_cardinalities'] = None
+
+    # print(record)
+    # print(x_train)
+
+    device = "cuda"
+
+    # drop some configs
+    lr = modelconfig['lr']
+    batch_size = int(modelconfig['batch_size'])
+
+    modelconfig.pop('lr')
+    modelconfig.pop('batch_size')
+
+    # Init model
+    model = rtdl.FTTransformer.make_default(**modelconfig).cuda()
+
+    if disease == 'Obesity':
+        criterion = torch.nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([0.5]))
+    else:
+        criterion = torch.nn.BCEWithLogitsLoss
+    logpath = out_file
+    # check record
+    if not check_record(record, logpath):
+        print("paras has trained.")
+        return
+    if(disease =='EW-T2D'):
+        net = NeuralNetClassifier(
+            model,
+            max_epochs=100,
+            criterion=criterion,
+            lr=lr,
+            # Shuffle training data on each epoch
+            iterator_train__shuffle=True,
+            train_split=ValidSplit(0.2, random_state=42),
+            device=device,
+            optimizer=torch.optim.AdamW,
+            optimizer__weight_decay=1e-4,
+            batch_size=batch_size,
+            callbacks=[EarlyStopping(patience=5)] if(use_best_losses==False) else [EarlyStopping(patience=5), ClassificationAccuracy_EW(save_model_file)],
+        )
+    elif(disease=='C-T2D'):
+        net = NeuralNetClassifier(
+            model,
+            max_epochs=200,
+            criterion=criterion,
+            lr=lr,
+            # Shuffle training data on each epoch
+            iterator_train__shuffle=True,
+            train_split=ValidSplit(0.2, random_state=42),
+            device=device,
+            optimizer=torch.optim.AdamW,
+            optimizer__weight_decay=1e-4,
+            batch_size=batch_size,
+            callbacks=[EarlyStopping(patience=15)] if(use_best_losses==False) else [EarlyStopping(patience=10), ClassificationAccuracy_C(save_model_file)],
+        )
+    else:
+        net = NeuralNetClassifier(
+            model,
+            max_epochs=100,
+            criterion=criterion,
+            lr=lr,
+            # Shuffle training data on each epoch
+            iterator_train__shuffle=True,
+            train_split=ValidSplit(0.1, random_state=42),
+            device=device,
+            optimizer=torch.optim.AdamW,
+            optimizer__weight_decay=1e-4,
+            batch_size=batch_size,
+            callbacks=[EarlyStopping(patience=10)] if(use_best_losses==False) else [EarlyStopping(patience=5), ClassificationAccuracy_other()],
+        )
+
+    net.fit(x_train, y_train)
+
+    # test
+    if(use_best_losses):
+        if(disease=='C-T2D'):
+            net.load_params(f_params="./ckpt/ckpt_C-T2D/model_best.pkl",
+                            f_optimizer="./ckpt/ckpt_C-T2D/optim_best.pkl",
+                            f_history="./ckpt/ckpt_C-T2D/history_best.json")
+        else:
+            net.load_params(f_params="./ckpt/ckpt_EW-T2D/model_best.pkl",
+                            f_optimizer="./ckpt/ckpt_EW-T2D/optim_best.pkl",
+                            f_history="./ckpt/ckpt_EW-T2D/history_best.json")
+    scores = evaluate(net, x_test, y_test)
+    record.update(scores)
+
+    try:
+        res_df = pd.read_csv(logpath)
+        record_df = pd.DataFrame(record, index=[0])
+        res_df = pd.concat([res_df, record_df])
+    except:
+        res_df = pd.DataFrame(record, index=[0])
+    res_df.to_csv(logpath, index=False)
+
+
+def FT_train_ex_2(disease, seed,use_best_losses,in_file: str,inpret_file,colum,ratio, **kwargs):
+    # Set random seed
+    setup_seed(seed)
+    print('begin_FT_train:!')
+    # Load feature
+    if disease in ['EW-T2D', 'LC', 'C-T2D', 'IBD', 'Obesity','new-C-T2D']:
+        X, y = acqure_ori_feature_ex(in_file=in_file,inpret_file=inpret_file,colum=colum,ratio=ratio)
+        scaler = StandardScaler()
+        X = scaler.fit_transform(X)
+        #print(X.shape)
+        # 划分数据
+        x_train, x_test, y_train, y_test = train_test_split(X, y,
+                                                            test_size=0.2,
+                                                            random_state=seed,
+                                                            stratify=y)
+        x_train = x_train.astype(np.float32)
+        x_test = x_test.astype(np.float32)
+        y_train = np.expand_dims(y_train, axis=1).astype(np.float32)
+
+
+    else:
+        exit()
+    modelconfig = kwargs
+    # other config
+    modelconfig['lr'] = float(modelconfig['lr'])
+    # record['feature'] = 'kg'
+
+    modelconfig['n_num_features'] = x_train.shape[1]
+    modelconfig['last_layer_query_idx'] = [-1]
+    modelconfig['d_out'] = 1
+    modelconfig['cat_cardinalities'] = None
+
+    device = "cuda"
+
+    # drop some configs
+    lr = modelconfig['lr']
+    batch_size = int(modelconfig['batch_size'])
+
+    modelconfig.pop('lr')
+    modelconfig.pop('batch_size')
+
+    # Init model
+    model = rtdl.FTTransformer.make_default(**modelconfig).cuda()
+
+    if disease == 'Obesity':
+        criterion = torch.nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([0.5]))
+    else:
+        criterion = torch.nn.BCEWithLogitsLoss
+
+    if(disease =='EW-T2D'):
+        net = NeuralNetClassifier(
+            model,
+            max_epochs=100,
+            criterion=criterion,
+            lr=lr,
+            # Shuffle training data on each epoch
+            iterator_train__shuffle=True,
+            train_split=ValidSplit(0.2, random_state=42),
+            device=device,
+            optimizer=torch.optim.AdamW,
+            optimizer__weight_decay=1e-4,
+            batch_size=batch_size,
+            callbacks=[EarlyStopping(patience=5)] if(use_best_losses==False) else [EarlyStopping(patience=5), ClassificationAccuracy_EW(save_model_file)],
+        )
+    elif(disease=='C-T2D'):
+        net = NeuralNetClassifier(
+            model,
+            max_epochs=200,
+            criterion=criterion,
+            lr=lr,
+            # Shuffle training data on each epoch
+            iterator_train__shuffle=True,
+            train_split=ValidSplit(0.2, random_state=42),
+            device=device,
+            optimizer=torch.optim.AdamW,
+            optimizer__weight_decay=1e-4,
+            batch_size=batch_size,
+            callbacks=[EarlyStopping(patience=15)] if(use_best_losses==False) else [EarlyStopping(patience=10), ClassificationAccuracy_C(save_model_file)],
+        )
+    else:
+        net = NeuralNetClassifier(
+            model,
+            max_epochs=100,
+            criterion=criterion,
+            lr=lr,
+            # Shuffle training data on each epoch
+            iterator_train__shuffle=True,
+            train_split=ValidSplit(0.1, random_state=42),
+            device=device,
+            optimizer=torch.optim.AdamW,
+            optimizer__weight_decay=1e-4,
+            batch_size=batch_size,
+            callbacks=[EarlyStopping(patience=10)] if(use_best_losses==False) else [EarlyStopping(patience=5), ClassificationAccuracy_other()],
+        )
+
+    net.fit(x_train, y_train)
+
+    # test
+    if(use_best_losses):
+        if(disease=='C-T2D'):
+            net.load_params(f_params="./ckpt/ckpt_C-T2D/model_best.pkl",
+                            f_optimizer="./ckpt/ckpt_C-T2D/optim_best.pkl",
+                            f_history="./ckpt/ckpt_C-T2D/history_best.json")
+        else:
+            net.load_params(f_params="./ckpt/ckpt_EW-T2D/model_best.pkl",
+                            f_optimizer="./ckpt/ckpt_EW-T2D/optim_best.pkl",
+                            f_history="./ckpt/ckpt_EW-T2D/history_best.json")
+    scores = evaluate(net, x_test, y_test)
+    return scores

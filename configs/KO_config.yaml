@@ -1,0 +1,19 @@
+paras_cat_C:
+  learning_rate: 0.01
+  depth: 7
+  colsample_bylevel: 0.9
+
+paras_cat_EW:
+  learning_rate: 0.01
+  depth: 8
+  colsample_bylevel: 0.9
+
+paras_ft_C:
+  n_blocks: 1
+  lr: 0.0001
+  batch_size: 16
+
+paras_ft_EW:
+  n_blocks: 1
+  lr: 0.0002
+  batch_size: 4
