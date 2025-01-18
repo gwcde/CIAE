@@ -25,7 +25,7 @@ def setup_seed(seed):
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.enabled = False  # 禁用cudnn使用非确定性算法
+    torch.backends.cudnn.enabled = False  # 
     torch.use_deterministic_algorithms(True)
 
 def acqure_ori_feature(in_file):
@@ -169,7 +169,7 @@ def XG_train(disease, feature, seed,use_best_losses,index_se,ko_nums,GBDT_type,f
         scaler = StandardScaler()
         X = scaler.fit_transform(X)
         print(type(X))
-        # 划分数据
+        # 
         x_train, x_test, y_train, y_test = train_test_split(X, y,
                                                             test_size=0.2,
                                                             random_state=seed,
@@ -242,7 +242,7 @@ def Cat_train(disease, feature, seed,GBDT_type,in_file: str, out_file: str, **kw
         scaler = StandardScaler()
         X = scaler.fit_transform(X)
         print(X.shape)
-        # 划分数据
+        # 
         x_train, x_test, y_train, y_test = train_test_split(X, y,
                                                             test_size=0.2,
                                                             random_state=seed,
@@ -307,7 +307,7 @@ def Cat_train_ex(disease, feature, seed,GBDT_type,in_file: str, out_file: str,in
         scaler = StandardScaler()
         X = scaler.fit_transform(X)
         #print(X.shape)
-        # 划分数据
+        # 
         x_train, x_test, y_train, y_test = train_test_split(X, y,
                                                             test_size=0.2,
                                                             random_state=seed,
@@ -374,7 +374,7 @@ def Cat_train_ex_2(disease, seed,GBDT_type,in_file: str,inpret_file: str,colum,r
         scaler = StandardScaler()
         X = scaler.fit_transform(X)
         #print(X.shape)
-        # 划分数据
+        # 
         x_train, x_test, y_train, y_test = train_test_split(X, y,
                                                             test_size=0.2,
                                                             random_state=seed,

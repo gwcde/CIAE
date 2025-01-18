@@ -28,7 +28,7 @@ def setup_seed(seed):
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.enabled = False  # 禁用cudnn使用非确定性算法
+    torch.backends.cudnn.enabled = False  # 
     torch.use_deterministic_algorithms(True)
 
 def check_record(paras: Dict, df_path: str) -> bool:
@@ -208,7 +208,7 @@ def FT_train(disease, feature, seed,use_best_losses,in_file: str, out_file: str,
         scaler = StandardScaler()
         X = scaler.fit_transform(X)
         print(X.shape)
-        # 划分数据
+        #
         x_train, x_test, y_train, y_test = train_test_split(X, y,
                                                             test_size=0.2,
                                                             random_state=seed,
@@ -349,7 +349,7 @@ def FT_train_ex(disease, feature, seed,use_best_losses,in_file: str, out_file: s
         scaler = StandardScaler()
         X = scaler.fit_transform(X)
         #print(X.shape)
-        # 划分数据
+        # 
         x_train, x_test, y_train, y_test = train_test_split(X, y,
                                                             test_size=0.2,
                                                             random_state=seed,
@@ -481,7 +481,7 @@ def FT_train_ex_2(disease, seed,use_best_losses,in_file: str,inpret_file,colum,r
         scaler = StandardScaler()
         X = scaler.fit_transform(X)
         #print(X.shape)
-        # 划分数据
+        # 
         x_train, x_test, y_train, y_test = train_test_split(X, y,
                                                             test_size=0.2,
                                                             random_state=seed,
