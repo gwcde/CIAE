@@ -421,20 +421,16 @@ def compute_five_merge_inpret(root_dir,disease):
 
 
 def main():
-    # 初始化 argparse 解析器
     parser = argparse.ArgumentParser(description='Process input file paths and output locations.')
 
-    # 添加必需的参数
     parser.add_argument('--KO_EW_file', type=str, required=True, help='Path to the EW_KO file.')
     parser.add_argument('--KO_C_file', type=str, required=True, help='Path to the C_KO file.')
     parser.add_argument('--config_file', type=str, required=True, help='Path to the configuration file.')
     parser.add_argument('--EW_T2D_out_file', type=str, required=True, help='Output path_dir for EW weights.')
     parser.add_argument('--C_T2D_out_file', type=str, required=True, help='Output path_dir for C weights.')
 
-    # 解析命令行参数
     args = parser.parse_args()
 
-    # 打印参数
     print(f"KO_EW_file: {args.KO_EW_file}")
     print(f"KO_C_file: {args.KO_C_file}")
     print(f"config_file: {args.config_file}")
